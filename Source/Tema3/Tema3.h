@@ -18,7 +18,6 @@ private:
 	void FrameEnd() override;
 
 	void RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 &modelMatrix, Texture2D* texture1 = NULL, Texture2D* texture2 = NULL);
-	Texture2D* CreateRandomTexture(unsigned int width, unsigned int height);
 
 	void OnInputUpdate(float deltaTime, int mods) override;
 	void OnKeyPress(int key, int mods) override;
@@ -30,9 +29,5 @@ private:
 	void OnWindowResize(int width, int height) override;
 
 	std::unordered_map<std::string, Texture2D*> mapTextures;
-	GLuint randomTextureID;
-
-	// mix doua texturi
-	int mix = 0;
 	std::vector<Building *> buildings;
 };

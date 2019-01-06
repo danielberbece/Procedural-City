@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-
+#include <ctime>
 #include <Core/Engine.h>
 
 using namespace std;
@@ -23,78 +23,41 @@ void Tema3::Init()
 	// Load textures
 	{
 		Texture2D* texture = new Texture2D();
-		texture->Load2D((textureLoc + "grass_bilboard.png").c_str(), GL_REPEAT);
-		mapTextures["grass"] = texture;
+		texture->Load2D((textureLoc + "img5.jpg").c_str(), GL_REPEAT);
+		mapTextures["walls1"] = texture;
 	}
-	/*
+	
 	{
 		Texture2D* texture = new Texture2D();
-		texture->Load2D((textureLoc + "crate.jpg").c_str(), GL_REPEAT);
-		mapTextures["crate"] = texture;
+		texture->Load2D((textureLoc + "roof.jpg").c_str(), GL_REPEAT);
+		mapTextures["roof1"] = texture;
 	}
-
-	{
-		Texture2D* texture = new Texture2D();
-		texture->Load2D((textureLoc + "earth.png").c_str(), GL_REPEAT);
-		mapTextures["earth"] = texture;
-	}
-
-	{
-		Texture2D* texture = new Texture2D();
-		texture->Load2D("Resources/Models/Vegetation/Bamboo/bamboo.png", GL_REPEAT);
-		mapTextures["bamboo"] = texture;
-	}
-
-	{
-		mapTextures["random"] = CreateRandomTexture(25, 25);
-	}
-
-	*/
+	
+	std::srand(std::time(NULL));
 
 	// Create a simple building
-	Building * b = new Building(SIMPLE, 5, 2, 1, 0, 0);
-	buildings.push_back(b);
-	b = new Building(BLOCKY, 4, 1, 2, 2, 4);
-	buildings.push_back(b);
-
-	/*
-	{
-		vector<glm::vec3> vertices
-		{
-			glm::vec3(0.5f,   0.5f, 0.0f),	// Top Right
-			glm::vec3(0.5f,  -0.5f, 0.0f),	// Bottom Right
-			glm::vec3(-0.5f, -0.5f, 0.0f),	// Bottom Left
-			glm::vec3(-0.5f,  0.5f, 0.0f),	// Top Left
-		};
-
-		vector<glm::vec3> normals
-		{
-			glm::vec3(0, 1, 1),
-			glm::vec3(1, 0, 1),
-			glm::vec3(1, 0, 0),
-			glm::vec3(0, 1, 0)
-		};
-
-		// TODO : Complete texture coordinates for the square
-		vector<glm::vec2> textureCoords
-		{
-			glm::vec2(1.0f, 0.0f),
-			glm::vec2(1.0f, 1.0f),
-			glm::vec2(0.0f, 1.0f),
-			glm::vec2(0.0f, 0.0f)
-		};
-
-		vector<unsigned short> indices =
-		{
-			0, 1, 3,
-			1, 2, 3
-		};
-
-		Mesh* mesh = new Mesh("square");
-		mesh->InitFromData(vertices, normals, textureCoords, indices);
-		meshes[mesh->GetMeshID()] = mesh;
+	Building * b;
+	//b = new Building(TOWER, 5, 2, 1, 0, 0, mapTextures["walls1"], mapTextures["roof1"]);
+	//buildings.push_back(b);
+	for (int i = 0; i < 60; i += 2) {
+		for (int j = 0; j < 60; j += 2) {
+			float height = 0;
+			while (height < 0.2) {
+				height = ((float)std::rand()) / (RAND_MAX / 4);
+			}
+			float typeRand = ((float)std::rand()) / ((float)RAND_MAX / 3);
+			if (typeRand < 1) {
+				b = new Building(BLOCKY, height, 1, 1, i, j, mapTextures["walls1"], mapTextures["roof1"]);
+				buildings.push_back(b);
+			} else if(typeRand < 2) {
+				b = new Building(TOWER, height, 1, 1, i, j, mapTextures["walls1"], mapTextures["roof1"]);
+				buildings.push_back(b);
+			} else {
+				b = new Building(SIMPLE, height, 1, 1, i, j, mapTextures["walls1"], mapTextures["roof1"]);
+				buildings.push_back(b);
+			}
+		}
 	}
-	*/
 
 	// Create a shader program for drawing face polygon with the color of the normal
 	{
@@ -182,18 +145,6 @@ void Tema3::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & model
 	int loc_projection_matrix = glGetUniformLocation(shader->program, "Projection");
 	glUniformMatrix4fv(loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-	// rotirea sferei
-	int loc_time = glGetUniformLocation(shader->program, "time");
-
-	// mix doua texturi
-	int loc_mix = glGetUniformLocation(shader->program, "mixer");
-	glUniform1i(loc_mix, mix);
-
-	if (mesh == meshes["sphere"])
-		glUniform1f(loc_time, (float)Engine::GetElapsedTime());
-	else
-		glUniform1f(loc_time, -1.0f);
-
 	if (texture1)
 	{
 		//TODO : activate texture location 0
@@ -217,47 +168,6 @@ void Tema3::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & model
 	// Draw the object
 	glBindVertexArray(mesh->GetBuffers()->VAO);
 	glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_SHORT, 0);
-}
-
-Texture2D* Tema3::CreateRandomTexture(unsigned int width, unsigned int height)
-{
-	GLuint textureID = 0;
-	unsigned int channels = 3;
-	unsigned int size = width * height * channels;
-	unsigned char* data = new unsigned char[size];
-
-	// TODO: generate random texture data
-	for (int i = 0; i < size; i++)
-		data[i] = rand();
-
-	// Generate and bind the new texture ID
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	// TODO: Set the texture parameters (MIN_FILTER, MAG_FILTER and WRAPPING MODE) using glTexParameteri
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4);
-
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	CheckOpenGLError();
-
-	// TODO: Use glTextImage2D to set the texture data
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-	// TODO: Generate texture mip-maps
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	CheckOpenGLError();
-
-	// Save the texture into a wrapper Texture2D class for using easier later during rendering phase
-	Texture2D* texture = new Texture2D();
-	texture->Init(textureID, width, height, channels);
-
-	SAFE_FREE_ARRAY(data);
-	return texture;
 }
 
 // Documentation for the input functions can be found in: "/Source/Core/Window/InputController.h" or
