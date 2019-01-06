@@ -18,7 +18,7 @@ Tema3::~Tema3()
 
 void Tema3::Init()
 {
-	const string textureLoc = "Source/Tema3/Textures/";
+	/*const string textureLoc = "Source/Tema3/Textures/";
 
 	// Load textures
 	{
@@ -34,12 +34,24 @@ void Tema3::Init()
 	}
 	
 	std::srand(std::time(NULL));
+	int rootLine = std::rand() / (RAND_MAX / MODEL_WIDTH);
+	int rootCol = std::rand() / (RAND_MAX / MODEL_WIDTH);
+	Building * b;
+	
+
+	for (int i = 0; i < MODEL_WIDTH; i++) {
+		cityMap[i][randCol] = 1;
+		b = new Building(TOWER, 3, meterUnitsScale, meterUnitsScale, i * meterUnitsScale, randCol * meterUnitsScale, mapTextures["walls1"], mapTextures["roof1"]);
+		buildings.push_back(b);
+		//for (int j = 0; j < MODEL_WIDTH; j++) {
+		//}
+	}*/
 
 	// Create a simple building
-	Building * b;
+	
 	//b = new Building(TOWER, 5, 2, 1, 0, 0, mapTextures["walls1"], mapTextures["roof1"]);
 	//buildings.push_back(b);
-	for (int i = 0; i < 60; i += 2) {
+	/*for (int i = 0; i < 60; i += 2) {
 		for (int j = 0; j < 60; j += 2) {
 			float height = 0;
 			while (height < 0.2) {
@@ -57,7 +69,9 @@ void Tema3::Init()
 				buildings.push_back(b);
 			}
 		}
-	}
+	}*/
+
+	city = new City();
 
 	// Create a shader program for drawing face polygon with the color of the normal
 	{
@@ -80,42 +94,8 @@ void Tema3::FrameStart()
 	glViewport(0, 0, resolution.x, resolution.y);
 }
 
-void Tema3::Update(float deltaTimeSeconds)
-{
-	/*
-	{
-		glm::mat4 modelMatrix = glm::mat4(1);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(1, 1, -3));
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(2));
-		RenderSimpleMesh(meshes["sphere"], shaders["ShaderLab9"], modelMatrix, mapTextures["earth"]);
-	}
-
-	{
-		glm::mat4 modelMatrix = glm::mat4(1);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(2, 0.5f, 0));
-		modelMatrix = glm::rotate(modelMatrix, RADIANS(60.0f), glm::vec3(1, 0, 0));
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(0.75f));
-		RenderSimpleMesh(meshes["box"], shaders["ShaderLab9"], modelMatrix, mapTextures["crate"]);
-	}
-
-	{
-		glm::mat4 modelMatrix = glm::mat4(1);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(-2, 0.5f, 0));
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(0.75f));
-		modelMatrix = glm::rotate(modelMatrix, RADIANS(75.0f), glm::vec3(1, 1, 0));
-		RenderSimpleMesh(meshes["box"], shaders["ShaderLab9"], modelMatrix, mapTextures["random"]);
-	}*/
-
-	{
-		//glm::mat4 modelMatrix = glm::mat4(1);
-		//modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.5f, 0.0f));
-		//modelMatrix = glm::scale(modelMatrix, glm::vec3(0.5f));
-		//RenderSimpleMesh(, shaders["ShaderLab9"], modelMatrix, mapTextures["grass"]);
-	}
-	for (auto building : buildings) {
-		building->render(shaders["ShaderCity"], GetSceneCamera());
-	}
-
+void Tema3::Update(float deltaTimeSeconds) {
+	city->renderCity(shaders["ShaderCity"], GetSceneCamera());
 }
 
 void Tema3::FrameEnd()

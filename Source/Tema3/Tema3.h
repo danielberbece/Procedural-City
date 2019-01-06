@@ -3,6 +3,10 @@
 #include <Component/Transform/Transform.h>
 #include <Core/GPU/Mesh.h>
 #include "Building.h"
+#include "City.h"
+
+// In meters:
+#define CITY_WIDTH 128
 
 class Tema3 : public SimpleScene
 {
@@ -30,4 +34,8 @@ private:
 
 	std::unordered_map<std::string, Texture2D*> mapTextures;
 	std::vector<Building *> buildings;
+	int cityMap[CITY_WIDTH][CITY_WIDTH] = {0};
+	float meterUnitsScale = 1.0f / 16;
+	float unitsMeterScale = 16;
+	City *city;
 };

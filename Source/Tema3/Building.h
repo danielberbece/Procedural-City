@@ -2,7 +2,6 @@
 #include <Component/SimpleScene.h>
 #include <Component/Transform/Transform.h>
 #include <Core/GPU/Mesh.h>
-#include <vector>
 
 #define SIMPLE 1
 #define BLOCKY 2

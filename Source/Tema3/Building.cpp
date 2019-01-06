@@ -109,8 +109,7 @@ void Building::createBlockyBuilding(SimpleShape shape) {
 }
 
 void Building::createTowerBuilding(float height, float width, float depth, float posX, float posZ) {
-	float radius = sqrt(width * depth);
-	createCylinder(std::rand() / (RAND_MAX / 4), height, radius / 2, posX, posZ);
+	createCylinder(std::rand() / (RAND_MAX / 4), height, sqrt(width * depth) / 2, posX, posZ);
 }
 
 void Building::createCylinder(int nFlatWalls, float height, float radius, float posX, float posZ) {
@@ -320,8 +319,8 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 }
 
 void Building::render(Shader *shader, EngineComponents::Camera *camera) {
+	glm::mat4 modelMatrix = glm::mat4(1);
 	for (int i = 0; i < meshes.size(); i++) {
-		glm::mat4 modelMatrix = glm::mat4(1);
 		renderMesh(meshes[i], shader, modelMatrix, mapTextures[i], camera);
 	}
 }

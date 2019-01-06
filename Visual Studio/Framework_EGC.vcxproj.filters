@@ -76,6 +76,9 @@
     <ClCompile Include="..\Source\Tema3\Building.cpp">
       <Filter>Tema3</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\Tema3\City.cpp">
+      <Filter>Tema3</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\Core\World.h">
@@ -136,6 +139,9 @@
       <Filter>Tema3</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\Tema3\Building.h">
+      <Filter>Tema3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Tema3\City.h">
       <Filter>Tema3</Filter>
     </ClInclude>
   </ItemGroup>
