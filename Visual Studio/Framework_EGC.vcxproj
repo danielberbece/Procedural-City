@@ -36,6 +36,7 @@
     <ClCompile Include="..\Source\Main.cpp" />
     <ClCompile Include="..\Source\Tema3\Building.cpp" />
     <ClCompile Include="..\Source\Tema3\City.cpp" />
+    <ClCompile Include="..\Source\Tema3\Street.cpp" />
     <ClCompile Include="..\Source\Tema3\Tema3.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -59,6 +60,7 @@
     <ClInclude Include="..\Source\include\utils.h" />
     <ClInclude Include="..\Source\Tema3\Building.h" />
     <ClInclude Include="..\Source\Tema3\City.h" />
+    <ClInclude Include="..\Source\Tema3\Street.h" />
     <ClInclude Include="..\Source\Tema3\Tema3.h" />
   </ItemGroup>
   <ItemGroup>

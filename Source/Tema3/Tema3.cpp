@@ -100,7 +100,7 @@ void Tema3::Update(float deltaTimeSeconds) {
 
 void Tema3::FrameEnd()
 {
-	DrawCoordinatSystem();
+	//DrawCoordinatSystem();
 }
 
 void Tema3::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & modelMatrix, Texture2D* texture1, Texture2D* texture2)

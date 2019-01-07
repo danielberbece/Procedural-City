@@ -1,15 +1,11 @@
 #include "City.h"
-
 #include <vector>
 #include <string>
 #include <iostream>
 #include <ctime>
-
 #include <Core/Engine.h>
 
 using namespace std;
-
-
 
 City::City() {
 	const string textureLoc = "Source/Tema3/Textures/";
@@ -27,40 +23,40 @@ City::City() {
 		mapTextures["roof1"] = texture;
 	}
 
-	std::srand(std::time(NULL));
-	int rootLine = 3; //rand() / (RAND_MAX / MODEL_WIDTH);
-	int rootCol = 3;  //rand() / (RAND_MAX / MODEL_WIDTH);
-	generateStreets(rootLine, rootCol, North);
-	addStreetsToMap();
-
-	Building *b;
-	for (int i = 0; i < CITY_WIDTH; i++) {
-		for (int j = 0; j < CITY_WIDTH; j++) {
-			if (cityMap[i][j] == 1) {
-				b = new Building(TOWER, 0.3, meterUnitsScale, meterUnitsScale, i * meterUnitsScale, j * meterUnitsScale, mapTextures["walls1"], mapTextures["roof1"]);
-				buildings.push_back(b);
-			}
-		}
+	{
+		Texture2D* texture = new Texture2D();
+		texture->Load2D((textureLoc + "road-nostripe.jpg").c_str(), GL_REPEAT);
+		mapTextures["road"] = texture;
 	}
+
+	{
+		Texture2D* texture = new Texture2D();
+		texture->Load2D((textureLoc + "cross-road.jpg").c_str(), GL_REPEAT);
+		mapTextures["crossroad"] = texture;
+	}
+
+	streets = new Streets(mapTextures["road"], mapTextures["crossroad"]);
+
+
+	std::srand(std::time(NULL));
+	int rootLine = rand() / (RAND_MAX / MODEL_WIDTH);
+	int rootCol = rand() / (RAND_MAX / MODEL_WIDTH);
+	generateStreets(rootLine, rootCol, North);
 }
 
 City::~City() {
 }
 
 void City::addStreetsToMap() {
-	for (int i = 0; i < MODEL_WIDTH; i++) {
-		for (int j = 0; j < MODEL_WIDTH; j++) {
-			if (streetMap[i][j] == 1) {
-				addStreetTile(i, j);
-			}
-		}
-	}
+	
 }
 
 void City::renderCity(Shader *shader, EngineComponents::Camera *camera) {
 	for (auto building : buildings) {
 		building->render(shader, camera);
 	}
+
+	streets->render(shader, camera);
 }
 
 void City::generateStreets(int line, int col, Direction fromDir) {
@@ -72,41 +68,80 @@ void City::generateStreets(int line, int col, Direction fromDir) {
 	// Current at the intersection:
 	if (streetMap[line][col] == 0) {
 		streetMap[line][col] = 1;
-		// go in 3 directions 
-		for (int i = North; i <= West; i++) {
-			if (i != fromDir) {	// Go in this dir
-				// How much?
-				makeStreet(line, col, (Direction)i);
+		// Check if ahead is a street. If it is, stop
+		if (isNextOccupied(line, col, oppositeDirection(fromDir))) {
+			streets->addStreet(ROAD, meterUnitsScale, meterUnitsScale, col * meterUnitsScale, line * meterUnitsScale, (int)fromDir);
+		} else {
+			streets->addStreet(CROSS, meterUnitsScale, meterUnitsScale, col * meterUnitsScale, line * meterUnitsScale, (int)fromDir);
+			// go in 3 directions 
+			for (int i = North; i <= West; i++) {
+				if (i != (int)fromDir && !isNextOccupied(line, col, (Direction)i)) {	// Go in this dir
+					// How much?
+					makeStreet(line, col, (Direction)i);
+				}
 			}
 		}
+	}
+}
+
+int City::isNextOccupied(int line, int col, Direction dir) {
+	switch (dir) {
+	case North:
+		if (streetMap[line - 1][col] == 1 || streetMap[line - 1][col - 1] == 1 || streetMap[line - 1][col + 1] == 1) {
+			return 1;
+		} else {
+			return 0;
+		}
+	case South:
+		if (streetMap[line + 1][col] == 1 || streetMap[line + 1][col - 1] == 1 || streetMap[line + 1][col + 1] == 1) {
+			return 1;
+		} else {
+			return 0;
+		}
+	case East:
+		if (streetMap[line][col + 1] == 1 || streetMap[line - 1][col + 1] == 1 || streetMap[line + 1][col + 1] == 1) {
+			return 1;
+		} else {
+			return 0;
+		}
+		break;
+	case West:
+		if (streetMap[line][col - 1] == 1 || streetMap[line - 1][col - 1] == 1 || streetMap[line + 1][col - 1] == 1) {
+			return 1;
+		} else {
+			return 0;
+		}
+	default:
+		//Shouldn't get here anyway
+		return 0;
 	}
 }
 
 void City::makeStreet(int line, int col, Direction dir) {
 	int dLine, dCol;
 	switch (dir) {
-		case North:
-			dLine = -1;
-			dCol = 0;
-			break;
-		case South:
-			dLine = 1;
-			dCol = 0;
-			break;
-		case East:
-			dLine = 0;
-			dCol = 1;
-			break;
-		case West:
-			dLine = 0;
-			dCol = -1;
-			break;
-		default:
-			//ERROR
-			break;
+	case North:
+		dLine = -1;
+		dCol = 0;
+		break;
+	case South:
+		dLine = 1;
+		dCol = 0;
+		break;
+	case East:
+		dLine = 0;
+		dCol = 1;
+		break;
+	case West:
+		dLine = 0;
+		dCol = -1;
+		break;
+	default:
+		//ERROR
+		break;
 	}
 
-	int length = rand() / (RAND_MAX / 20) + 10;
+	int length = rand() / (RAND_MAX / 16) + 10;
 	// Stop when you meet another street or end of road or end of map
 	for (int i = 0; i < length; i++) {
 		line += dLine;
@@ -120,6 +155,7 @@ void City::makeStreet(int line, int col, Direction dir) {
 			return;
 		} else {
 			streetMap[line][col] = 1;
+			streets->addStreet(ROAD, meterUnitsScale, meterUnitsScale, col * meterUnitsScale, line * meterUnitsScale, (int)dir);
 		}
 	}
 
@@ -127,15 +163,11 @@ void City::makeStreet(int line, int col, Direction dir) {
 	col += dCol;
 
 	// If we got here we got to the end of the street, meaning an intersection
-	generateStreets(line, col, dir);
+	generateStreets(line, col, oppositeDirection(dir));
 }
 
-void City::addStreetTile(int line, int col) {
-	for (int i = line * STREET_WIDTH; i < (line + 1) * STREET_WIDTH; i++) {
-		for (int j = col * STREET_WIDTH; j < (col + 1) * STREET_WIDTH; j++) {
-			cityMap[i][j] = 1;
-		}
-	}
+void City::addStreetTile(int line, int col, Direction dir) {
+	streets->addStreet(CROSS, meterUnitsScale, meterUnitsScale, col * meterUnitsScale, line * meterUnitsScale, (int)dir);
 }
 
 int City::inMapArea(int line, int col) {
@@ -144,3 +176,20 @@ int City::inMapArea(int line, int col) {
 	}
 	return 1;
 }
+
+Direction City::oppositeDirection(Direction dir) {
+	switch (dir) {
+	case South:
+		return North;
+	case North:
+		return South;
+	case West:
+		return East;
+	case East:
+		return West;
+	default:
+		//Shouldn't get here
+		return North;
+	}
+}
+
