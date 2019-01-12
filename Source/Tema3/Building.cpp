@@ -9,7 +9,7 @@
 
 using namespace std;
 
-Building::Building(int type, float height, float width,  float depth, float posX, float posZ, Texture2D *walls, Texture2D *roof) {
+Building::Building(int t, float height, float width,  float depth, float posX, float posZ, Texture2D *walls, Texture2D *roof) {
 	mHeight = height;
 	mWidth = width;
 	mDepth = depth;
@@ -17,14 +17,17 @@ Building::Building(int type, float height, float width,  float depth, float posX
 	mPosZ = posZ;
 	textureWalls = walls;
 	textureRoof = roof;
-
-	SimpleShape shape;
+	type = t;
 	float typeRand = ((float)std::rand()) / ((float)RAND_MAX / 2);
 	if (typeRand < 1) {
 		shape = Circle;
 	} else {
 		shape = Square;
 	}
+
+	materialShininess = 20;
+	materialKd = 0.5;
+	materialKs = 0.4;
 
 	switch (type) {
 		case SIMPLE:
@@ -39,7 +42,7 @@ Building::Building(int type, float height, float width,  float depth, float posX
 		default:
 			break;
 	}
-
+	
 }
 
 Building::~Building() {
@@ -59,8 +62,13 @@ void Building::createSimpleBuilding(SimpleShape shape, float height, float width
 			createRoof(height, width, depth, posX, posZ);
 			break;
 		case Circle:
-			radius = sqrt(depth * width);
-			createCylinder(0, height, radius / 2, posX, posZ);;
+			//radius = sqrt(depth * width);
+			if (depth < width) {
+				radius = depth;
+			} else {
+				radius = width;
+			}
+			createCylinder(0, height, radius / 2, posX, posZ);
 			break;
 		case Hexagon:
 			// TODO: createHexBuilding();
@@ -80,11 +88,13 @@ void Building::createBlockyBuilding(SimpleShape shape) {
 	float scale;
 	float heightScale;
 	float lastHeightScale = 0.1f;
+	int first = 1;
 	for (int i = 1; i <= numberBlocks; i++) {
-		scale = 2.0f;
-		while (scale >= lastScale || scale < lastScale / 2 ) {
+		scale = 1.0f;
+		while (first != 1 && scale >= lastScale || scale < lastScale / 4 ) {
 			scale = ((float) std::rand()) / RAND_MAX;
 		}
+		first = 0;
 		heightScale = 0.0f;
 		while (heightScale <= lastHeightScale || heightScale > ((float) i / numberBlocks)) {
 			heightScale = ((float)std::rand()) / RAND_MAX;
@@ -94,7 +104,13 @@ void Building::createBlockyBuilding(SimpleShape shape) {
 				createSimpleBuilding(shape, mHeight * heightScale, mWidth * scale, mDepth * scale, mPosX + mWidth * ((1 - scale) / 2), mPosZ + mDepth * ((1 - scale) / 2));
 				break;
 			case Circle:
-				createSimpleBuilding(shape, mHeight * heightScale, mWidth * scale, mDepth * scale, mPosX + mWidth * ((1 - scale) / 2), mPosZ + mDepth * ((1 - scale) / 2));
+				if (mWidth * scale < mDepth * scale) {
+					createSimpleBuilding(shape, mHeight * heightScale, mWidth * scale, mWidth * scale, mPosX + mWidth * ((1 - scale) / 2), mPosZ + mWidth * ((1 - scale) / 2));
+					break;
+				} else {
+					createSimpleBuilding(shape, mHeight * heightScale, mDepth * scale, mDepth * scale, mPosX + mDepth * ((1 - scale) / 2), mPosZ + mDepth * ((1 - scale) / 2));
+					break;
+				}
 				break;
 			case Hexagon:
 				// TODO
@@ -102,14 +118,20 @@ void Building::createBlockyBuilding(SimpleShape shape) {
 			default:
 				break;
 		}
-		createSimpleBuilding(shape, mHeight * heightScale , mWidth * scale, mDepth * scale, mPosX + mWidth * ((1 - scale) / 2), mPosZ + mDepth * ((1 - scale) / 2));
+		//createSimpleBuilding(shape, mHeight * heightScale , mWidth * scale, mDepth * scale, mPosX + mWidth * ((1 - scale) / 2), mPosZ + mDepth * ((1 - scale) / 2));
 		lastScale = scale;
 		lastHeightScale = heightScale;
 	}
 }
 
 void Building::createTowerBuilding(float height, float width, float depth, float posX, float posZ) {
-	createCylinder(std::rand() / (RAND_MAX / 4), height, sqrt(width * depth) / 2, posX, posZ);
+	float radius;
+	if (depth < width) {
+		radius = depth;
+	} else {
+		radius = width;
+	}
+	createCylinder(std::rand() / (RAND_MAX / 3), height, radius / 2, posX, posZ);
 }
 
 void Building::createCylinder(int nFlatWalls, float height, float radius, float posX, float posZ) {
@@ -122,6 +144,7 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 	glm::vec3 beforePoint = center + glm::vec3(radius, 0, 0);
 	vector<glm::vec2> textureCoords;
 	glm::vec2 beforeTextCoord = glm::vec2(0.0f, 0.0f);
+	glm::vec3 beforeNorm = glm::vec3(1.0f, 0.0f, 0.0f);
 
 	// Implement a skip:
 	vector<float> anglesToSkip;
@@ -135,6 +158,8 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 		anglesToSkip.push_back(angleToSkip);
 	}
 
+	float angleForLight = rand() / (RAND_MAX / AI_MATH_HALF_PI);
+
 	for (float i = AI_MATH_TWO_PI / ((float) slices), j = 0; i <= AI_MATH_TWO_PI + 0.01f; i += AI_MATH_TWO_PI / ((float) slices), j += 4) {
 		if (anglesIndex < anglesToSkip.size()) {
 			if ( i > anglesToSkip[anglesIndex] && i < anglesToSkip[anglesIndex] + AI_MATH_HALF_PI) {
@@ -142,27 +167,32 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 				anglesIndex += 1;
 			}
 		}
+		if (angleForLight < i) {
+			angleForLight += AI_MATH_HALF_PI;
+			lightPoints.push_back(center + glm::vec3(cos(i) * (radius + lightWallDist), 0, sin(i) * (radius + lightWallDist)));
+		}
 		vertices.push_back(center + glm::vec3(glm::cos(i) * radius, height, glm::sin(i) * radius));
 		vertices.push_back(center + glm::vec3(glm::cos(i) * radius, 0, glm::sin(i) * radius));
 		vertices.push_back(beforePoint);
 		vertices.push_back(beforePoint + glm::vec3(0, height, 0));
 		
-		normals.push_back(glm::vec3(0, 1, 1));
-		normals.push_back(glm::vec3(1, 0, 1));
-		normals.push_back(glm::vec3(1, 0, 0));
-		normals.push_back(glm::vec3(0, 1, 0));
+		normals.push_back(glm::vec3(glm::cos(i), 0, glm::sin(i)));
+		normals.push_back(glm::vec3(glm::cos(i), 0, glm::sin(i)));
+		normals.push_back(beforeNorm);
+		normals.push_back(beforeNorm);
 	
 		int aux[] = { j, j + 1, j + 3, j + 1, j + 2, j + 3 };
 		indices.insert(indices.end(), aux, aux + 6);
 
-		float scale = 0.25f * slices / AI_MATH_TWO_PI;
+		float scale = 0.1f * slices / AI_MATH_TWO_PI;
 		textureCoords.push_back(glm::vec2(i * scale , 0.0f));
-		textureCoords.push_back(glm::vec2(i * scale, height));
-		textureCoords.push_back(beforeTextCoord + glm::vec2(0.0f, height));
+		textureCoords.push_back(glm::vec2(i * scale , height * 5));
+		textureCoords.push_back(beforeTextCoord + glm::vec2(0.0f, height * 5));
 		textureCoords.push_back(beforeTextCoord);
 
 		beforePoint = center + glm::vec3(glm::cos(i) * radius, 0, glm::sin(i) * radius);
 		beforeTextCoord = glm::vec2(i * scale, 0.0f);
+		beforeNorm = glm::vec3(glm::cos(i), 0, glm::sin(i));
 	}
 
 	Mesh* mesh = new Mesh("towerBuilding");
@@ -189,9 +219,9 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 		vertices1.push_back(beforePoint);
 		vertices1.push_back(center + glm::vec3(glm::cos(i) * radius, height, glm::sin(i) * radius));
 
-		normals1.push_back(glm::vec3(0, 1, 1));
-		normals1.push_back(glm::vec3(1, 0, 1));
-		normals1.push_back(glm::vec3(1, 0, 0));
+		normals1.push_back(glm::vec3(0, 1, 0));
+		normals1.push_back(glm::vec3(0, 1, 0));
+		normals1.push_back(glm::vec3(0, 1, 0));
 
 		int aux[] = { j, j + 1, j + 2};
 		indices1.insert(indices1.end(), aux, aux + 3);
@@ -222,17 +252,17 @@ void Building::createRoof(float height, float width, float depth, float x, float
 
 	vector<glm::vec3> normals
 	{
-		glm::vec3(0, 1, 1),
-		glm::vec3(1, 0, 1),
-		glm::vec3(1, 0, 0),
+		glm::vec3(0, 1, 0),
+		glm::vec3(0, 1, 0),
+		glm::vec3(0, 1, 0),
 		glm::vec3(0, 1, 0)
 	};
 
 	vector<glm::vec2> textureCoords
 	{
-		glm::vec2(width, 0.0f),
-		glm::vec2(width, depth),
-		glm::vec2(0.0f, depth),
+		glm::vec2(width * 4, 0.0f),
+		glm::vec2(width * 4, depth * 4),
+		glm::vec2(0.0f, depth * 4),
 		glm::vec2(0.0f, 0.0f)
 	};
 
@@ -252,6 +282,7 @@ void Building::createRoof(float height, float width, float depth, float x, float
 // direction: 0: Ox    1: -Oz    2: -Ox    3: Oz  
 void Building::createBuildingSide(float height, float width, float x, float z, int direction) {
 	vector<glm::vec3> vertices;
+	vector<glm::vec3> normals;
 	switch (direction) {
 		case 0:
 			vertices = {
@@ -260,6 +291,13 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 			glm::vec3(x, 0.0f, z),	// Bottom Left
 			glm::vec3(x, height, z),	// Top Left
 			};
+			normals = {
+			glm::vec3(0, 0, -1),
+			glm::vec3(0, 0, -1),
+			glm::vec3(0, 0, -1),
+			glm::vec3(0, 0, -1)
+			};
+			lightPoints.push_back(glm::vec3(x + width / 2, 0, z - lightWallDist));
 			break;
 		case 1:
 			vertices = {
@@ -268,6 +306,14 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 			glm::vec3(x, 0.0f, z),	// Bottom Left
 			glm::vec3(x, height, z),	// Top Left
 			};
+			normals = {
+			glm::vec3(1, 0, 0),
+			glm::vec3(1, 0, 0),
+			glm::vec3(1, 0, 0),
+			glm::vec3(1, 0, 0)
+			};
+			lightPoints.push_back(glm::vec3(x + lightWallDist, 0, z + width / 2));
+
 			break;
 		case 2:
 			vertices = {
@@ -276,6 +322,14 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 			glm::vec3(x, 0.0f, z),	// Bottom Left
 			glm::vec3(x, height, z),	// Top Left
 			};
+			normals = {
+			glm::vec3(0, 0, 1),
+			glm::vec3(0, 0, 1),
+			glm::vec3(0, 0, 1),
+			glm::vec3(0, 0, 1)
+			};
+			lightPoints.push_back(glm::vec3(x - width / 2, 0, z + lightWallDist));
+
 			break;
 		case 3:
 			vertices = {
@@ -284,25 +338,25 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 			glm::vec3(x, 0.0f, z),	// Bottom Left
 			glm::vec3(x, height, z),	// Top Left
 			};
+			normals = {
+			glm::vec3(-1, 0, 0),
+			glm::vec3(-1, 0, 0),
+			glm::vec3(-1, 0, 0),
+			glm::vec3(-1, 0, 0)
+			};
+			lightPoints.push_back(glm::vec3(x - lightWallDist, 0, z - width / 2));
+
 			break;
 		default:
 			// ERROR
 			break;
 	}
-		
-	vector<glm::vec3> normals
-	{
-		glm::vec3(0, 1, 1),
-		glm::vec3(1, 0, 1),
-		glm::vec3(1, 0, 0),
-		glm::vec3(0, 1, 0)
-	};
-
+	
 	vector<glm::vec2> textureCoords
 	{
-		glm::vec2(width, 0.0f),
-		glm::vec2(width, height),
-		glm::vec2(0.0f, height),
+		glm::vec2(width * 4, 0.0f),
+		glm::vec2(width * 4, height * 5),
+		glm::vec2(0.0f, height * 5),
 		glm::vec2(0.0f, 0.0f)
 	};
 
@@ -318,20 +372,45 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 	mapTextures.push_back(textureWalls);
 }
 
-void Building::render(Shader *shader, EngineComponents::Camera *camera) {
+void Building::render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
 	glm::mat4 modelMatrix = glm::mat4(1);
-	for (int i = 0; i < meshes.size(); i++) {
-		renderMesh(meshes[i], shader, modelMatrix, mapTextures[i], camera);
+	if (typeOfLight == 1) {
+		materialKd = 2;
+	}
+	for (int i = 0; i < meshes.size(); i++) {	
+		renderMesh(meshes[i], shader, modelMatrix, mapTextures[i], camera, lightPosition, glm::vec3(0, 1, 0), typeOfLight);
+	}
+	if (typeOfLight == 1) {
+		materialKd = 0.5;
 	}
 }
 
-void Building::renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 & modelMatrix, Texture2D* texture, EngineComponents::Camera *camera)
+void Building::renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 & modelMatrix, Texture2D* texture, EngineComponents::Camera *camera, glm::vec3 lightPosition, glm::vec3 lightDirection, int typeOfLight)
 {
 	if (!mesh || !shader || !shader->GetProgramID())
 		return;
 
 	// render an object using the specified shader and the specified position
 	glUseProgram(shader->program);
+
+	int light_position = glGetUniformLocation(shader->program, "light_position");
+	glUniform3f(light_position, lightPosition.x, lightPosition.y, lightPosition.z);
+
+	int light_direction = glGetUniformLocation(shader->program, "light_direction");
+	glUniform3f(light_direction, lightDirection.x, lightDirection.y, lightDirection.z);
+
+	glm::vec3 eyePosition = camera->transform->GetWorldPosition();
+	int eye_position = glGetUniformLocation(shader->program, "eye_position");
+	glUniform3f(eye_position, eyePosition.x, eyePosition.y, eyePosition.z);
+
+	int material_shininess = glGetUniformLocation(shader->program, "material_shininess");
+	glUniform1i(material_shininess, materialShininess);
+
+	int material_kd = glGetUniformLocation(shader->program, "material_kd");
+	glUniform1f(material_kd, materialKd);
+
+	int material_ks = glGetUniformLocation(shader->program, "material_ks");
+	glUniform1f(material_ks, materialKs);
 
 	// Bind model matrix
 	GLint loc_model_matrix = glGetUniformLocation(shader->program, "Model");
@@ -347,13 +426,27 @@ void Building::renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 & modelMat
 	int loc_projection_matrix = glGetUniformLocation(shader->program, "Projection");
 	glUniformMatrix4fv(loc_projection_matrix, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
 
-	if (texture)
-	{
+	if (texture) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture->GetTextureID());
 		glUniform1i(glGetUniformLocation(shader->GetProgramID(), "texture_1"), 0);
 	}
 
+	int type = glGetUniformLocation(shader->program, "t");
+	glUniform1i(type, typeOfLight);
+
+	if (typeOfLight == 1) {
+		char buffer[64];
+		int loc;
+		for (int i = 0; i < 4; i++) {
+			sprintf(buffer, "spotLightsPos[%i]", i);
+			loc = glGetUniformLocation(shader->program, buffer);
+			glUniform3f(loc, lightPoints[i].x, lightPoints[i].y, lightPoints[i].z);
+		}
+		int cut_off_angle = glGetUniformLocation(shader->program, "cut_off_angle");
+		glUniform1f(cut_off_angle, cutoff_angle);
+	}
+	
 	// Draw the object
 	glBindVertexArray(mesh->GetBuffers()->VAO);
 	glDrawElements(mesh->GetDrawMode(), static_cast<int>(mesh->indices.size()), GL_UNSIGNED_SHORT, 0);

@@ -6,7 +6,10 @@
 #include "City.h"
 
 // In meters:
-#define CITY_WIDTH 128
+//#define CITY_WIDTH 128
+
+#define DAY 0
+#define NIGHT 1
 
 class Tema3 : public SimpleScene
 {
@@ -32,10 +35,7 @@ private:
 	void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
 	void OnWindowResize(int width, int height) override;
 
-	std::unordered_map<std::string, Texture2D*> mapTextures;
 	std::vector<Building *> buildings;
-	int cityMap[CITY_WIDTH][CITY_WIDTH] = {0};
-	float meterUnitsScale = 1.0f / 16;
-	float unitsMeterScale = 16;
 	City *city;
+	float timeMode;
 };

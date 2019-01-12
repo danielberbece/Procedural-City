@@ -82,6 +82,9 @@
     <ClCompile Include="..\Source\Tema3\Street.cpp">
       <Filter>Tema3</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\Tema3\Decoration.cpp">
+      <Filter>Tema3</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\Core\World.h">
@@ -148,6 +151,9 @@
       <Filter>Tema3</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\Tema3\Street.h">
+      <Filter>Tema3</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Tema3\Decoration.h">
       <Filter>Tema3</Filter>
     </ClInclude>
   </ItemGroup>

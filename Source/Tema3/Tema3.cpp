@@ -18,60 +18,9 @@ Tema3::~Tema3()
 
 void Tema3::Init()
 {
-	/*const string textureLoc = "Source/Tema3/Textures/";
-
-	// Load textures
-	{
-		Texture2D* texture = new Texture2D();
-		texture->Load2D((textureLoc + "img5.jpg").c_str(), GL_REPEAT);
-		mapTextures["walls1"] = texture;
-	}
-	
-	{
-		Texture2D* texture = new Texture2D();
-		texture->Load2D((textureLoc + "roof.jpg").c_str(), GL_REPEAT);
-		mapTextures["roof1"] = texture;
-	}
-	
-	std::srand(std::time(NULL));
-	int rootLine = std::rand() / (RAND_MAX / MODEL_WIDTH);
-	int rootCol = std::rand() / (RAND_MAX / MODEL_WIDTH);
-	Building * b;
-	
-
-	for (int i = 0; i < MODEL_WIDTH; i++) {
-		cityMap[i][randCol] = 1;
-		b = new Building(TOWER, 3, meterUnitsScale, meterUnitsScale, i * meterUnitsScale, randCol * meterUnitsScale, mapTextures["walls1"], mapTextures["roof1"]);
-		buildings.push_back(b);
-		//for (int j = 0; j < MODEL_WIDTH; j++) {
-		//}
-	}*/
-
-	// Create a simple building
-	
-	//b = new Building(TOWER, 5, 2, 1, 0, 0, mapTextures["walls1"], mapTextures["roof1"]);
-	//buildings.push_back(b);
-	/*for (int i = 0; i < 60; i += 2) {
-		for (int j = 0; j < 60; j += 2) {
-			float height = 0;
-			while (height < 0.2) {
-				height = ((float)std::rand()) / (RAND_MAX / 4);
-			}
-			float typeRand = ((float)std::rand()) / ((float)RAND_MAX / 3);
-			if (typeRand < 1) {
-				b = new Building(BLOCKY, height, 1, 1, i, j, mapTextures["walls1"], mapTextures["roof1"]);
-				buildings.push_back(b);
-			} else if(typeRand < 2) {
-				b = new Building(TOWER, height, 1, 1, i, j, mapTextures["walls1"], mapTextures["roof1"]);
-				buildings.push_back(b);
-			} else {
-				b = new Building(SIMPLE, height, 1, 1, i, j, mapTextures["walls1"], mapTextures["roof1"]);
-				buildings.push_back(b);
-			}
-		}
-	}*/
-
+	timeMode = DAY;
 	city = new City();
+	city->setMode(timeMode);
 
 	// Create a shader program for drawing face polygon with the color of the normal
 	{
@@ -127,9 +76,6 @@ void Tema3::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & model
 
 	if (texture1)
 	{
-		//TODO : activate texture location 0
-		//TODO : Bind the texture1 ID
-		//TODO : Send texture uniform value
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1->GetTextureID());
 		glUniform1i(glGetUniformLocation(shader->GetProgramID(), "texture_1"), 0);
@@ -137,9 +83,6 @@ void Tema3::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & model
 
 	if (texture2)
 	{
-		//TODO : activate texture location 1
-		//TODO : Bind the texture2 ID
-		//TODO : Send texture uniform value
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2->GetTextureID());
 		glUniform1i(glGetUniformLocation(shader->GetProgramID(), "texture_2"), 1);
@@ -155,20 +98,26 @@ void Tema3::RenderSimpleMesh(Mesh *mesh, Shader *shader, const glm::mat4 & model
 
 void Tema3::OnInputUpdate(float deltaTime, int mods)
 {
-	float speed = 2;
+	float speed = 0.8f;
 
 	if (!window->MouseHold(GLFW_MOUSE_BUTTON_RIGHT))
 	{
 		glm::vec3 up = glm::vec3(0, 1, 0);
 		glm::vec3 right = GetSceneCamera()->transform->GetLocalOXVector();
 		glm::vec3 forward = GetSceneCamera()->transform->GetLocalOZVector();
-		forward = glm::normalize(glm::vec3(forward.x, 0, forward.z));
+		forward = speed * glm::normalize(glm::vec3(forward.x, 0, forward.z));
 	}
 }
 
 void Tema3::OnKeyPress(int key, int mods)
 {
 	// add key press event
+	if (key == GLFW_KEY_SPACE) {
+		// Change between day mode and night mode
+		timeMode = 1 - timeMode;
+		city->setMode(timeMode);
+	}
+
 }
 
 void Tema3::OnKeyRelease(int key, int mods)

@@ -3,24 +3,18 @@
 #include <Component/Transform/Transform.h>
 #include <Core/GPU/Mesh.h>
 
-#define CROSS 0
-#define ROAD 1
-
-class Streets {
+class Decoration {
 public:
-	Streets(Texture2D *tex1, Texture2D *tex2);
-	~Streets();
+	Decoration(Texture2D *tex1, float depth, float width, float height, float x, float z, float textScale);
+	~Decoration();
 	void render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight);
-	void addStreet(int type, float width, float height, float posX, float posZ, int dir);
+	void addDecoration(int type, float width, float height, float posX, float posZ, int dir);
 private:
 	float mWidth, mHeight;
 	float mPosX, mPosZ;
 	void renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 & modelMatrix, Texture2D* texture, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight);
 	std::vector<Mesh*> meshes;
-	std::vector<int> texturesId;
-	std::vector<Texture2D*> textures;
-	Texture2D* streetTexture;
-	Texture2D* crossTexture;
+	Texture2D* texture;
 	unsigned int materialShininess;
 	float materialKd;
 	float materialKs;

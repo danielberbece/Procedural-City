@@ -10,17 +10,15 @@ uniform mat4 Model;
 uniform mat4 View;
 uniform mat4 Projection;
 
-uniform float time;
-
+// Output values to fragment shader
+out vec3 world_position;
+out vec3 world_normal;
 out vec2 texcoord;
 
-void main()
-{
-	// TODO : pass v_texture_coord as output to Fragment Shader
+void main() {
 	texcoord = v_texture_coord;
-
-	if(time >= 0)
-		texcoord = vec2(texcoord.x + time / 10, texcoord.y);
+	world_position = (Model * vec4(v_position, 1)).xyz;
+	world_normal = normalize(mat3(Model) * normalize(v_normal));
 
 	gl_Position = Projection * View * Model * vec4(v_position, 1.0);
 }

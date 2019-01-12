@@ -1,29 +1,20 @@
-#include "Street.h"
+#include "Decoration.h"
 #include <iostream>
 #include <Core/Engine.h>
 
 using namespace std;
 
-Streets::Streets(Texture2D *tex1, Texture2D *tex2) {
-	streetTexture = tex1;
-	crossTexture = tex2;
-	textures.push_back(crossTexture);
-	textures.push_back(streetTexture);
-	materialShininess = 40;
+Decoration::Decoration(Texture2D *tex1, float depth, float width, float height, float x, float z, float textScale) {
+	materialShininess = 60;
 	materialKd = 0.4;
-	materialKs = 0.4;
+	materialKs = 0.3;
 	cutoff_angle = 30;
-}
-
-Streets::~Streets() {
-}
-
-void Streets::addStreet(int type, float width, float height, float x, float z, int dir) {
-	vector<glm::vec3> vertices = {
-			glm::vec3(x + width, 0, z + height),	// Top Right
-			glm::vec3(x, 0, z + height),	// Bottom Right
-			glm::vec3(x, 0, z),	// Bottom Left
-			glm::vec3(x + width, 0, z),	// Top Left
+	texture = tex1;
+	vector<glm::vec3> vertices {
+		glm::vec3(x + width, depth, z + height),	// Top Right
+		glm::vec3(x, depth, z + height),	// Bottom Right
+		glm::vec3(x, depth, z),	// Bottom Left
+		glm::vec3(x + width, depth, z),	// Top Left
 	};
 
 	vector<glm::vec3> normals
@@ -33,7 +24,64 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 		glm::vec3(0, 1, 0),
 		glm::vec3(0, 1, 0)
 	};
+
+	vector<glm::vec2> textureCoords;
+	if (width < height) {
+		textureCoords = {
+			glm::vec2(2, 0.0f),
+			glm::vec2(2, (height / width) * textScale),
+			glm::vec2(0.0f, (height / width) * textScale),
+			glm::vec2(0.0f, 0.0f)
+		};
+	} else {
+		textureCoords = {
+			glm::vec2((width / height) * textScale, 0.0f),
+			glm::vec2((width / height) * textScale, 2),
+			glm::vec2(0.0f, 2),
+			glm::vec2(0.0f, 0.0f)
+		};
+	}
+
+	textureCoords = {
+			glm::vec2((width / textScale), 0.0f),
+			glm::vec2((width / textScale), height / textScale),
+			glm::vec2(0.0f, height / textScale),
+			glm::vec2(0.0f, 0.0f)
+	};
 	
+	cout << width << " " << height << endl;
+	
+
+	vector<unsigned short> indices =
+	{
+		0, 1, 3,
+		1, 2, 3
+	};
+
+	Mesh* mesh = new Mesh("ground");
+	mesh->InitFromData(vertices, normals, textureCoords, indices);
+	meshes.push_back(mesh);
+}
+
+Decoration::~Decoration() {
+}
+
+void Decoration::addDecoration(int type, float width, float height, float x, float z, int dir) {
+	vector<glm::vec3> vertices = {
+		glm::vec3(x + width, 0, z + height),	// Top Right
+		glm::vec3(x, 0, z + height),	// Bottom Right
+		glm::vec3(x, 0, z),	// Bottom Left
+		glm::vec3(x + width, 0, z),	// Top Left
+	};
+
+	vector<glm::vec3> normals
+	{
+		glm::vec3(0, 1, 1),
+		glm::vec3(1, 0, 1),
+		glm::vec3(1, 0, 0),
+		glm::vec3(0, 1, 0)
+	};
+
 	vector<glm::vec2> textureCoords
 	{
 		glm::vec2(1, 0),
@@ -41,14 +89,7 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 		glm::vec2(0, 1),
 		glm::vec2(0, 0)
 	};
-	if (dir == 0 || dir == 1) {
-		textureCoords =	{
-			glm::vec2(1, 1),
-			glm::vec2(0, 1),
-			glm::vec2(0, 0),
-			glm::vec2(1, 0)
-		};
-	}
+
 
 	vector<unsigned short> indices =
 	{
@@ -59,21 +100,16 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 	Mesh* mesh = new Mesh("street");
 	mesh->InitFromData(vertices, normals, textureCoords, indices);
 	meshes.push_back(mesh);
-	if (type == CROSS) {
-		texturesId.push_back(0);
-	} else {
-		texturesId.push_back(1);
-	}
 }
 
-void Streets::render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
+void Decoration::render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
 	glm::mat4 modelMatrix = glm::mat4(1);
 	for (int i = 0; i < meshes.size(); i++) {
-		renderMesh(meshes[i], shader, modelMatrix, textures[texturesId[i]], camera, lightPosition, typeOfLight);
+		renderMesh(meshes[i], shader, modelMatrix, texture, camera, lightPosition, typeOfLight);
 	}
 }
 
-void Streets::renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 &modelMatrix, Texture2D* texture, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
+void Decoration::renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 &modelMatrix, Texture2D* texture, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
 	if (!mesh || !shader || !shader->GetProgramID())
 		return;
 
@@ -118,6 +154,9 @@ void Streets::renderMesh(Mesh *mesh, Shader *shader, const glm::mat4 &modelMatri
 
 	int type = glGetUniformLocation(shader->program, "t");
 	glUniform1i(type, typeOfLight);
+
+	int cut_off_angle = glGetUniformLocation(shader->program, "cut_off_angle");
+	glUniform1f(cut_off_angle, cutoff_angle);
 
 	// Draw the object
 	glBindVertexArray(mesh->GetBuffers()->VAO);
