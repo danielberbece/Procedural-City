@@ -5,10 +5,13 @@
 using namespace std;
 
 Streets::Streets(Texture2D *tex1, Texture2D *tex2) {
+	// Add the textures to the class members
 	streetTexture = tex1;
 	crossTexture = tex2;
 	textures.push_back(crossTexture);
 	textures.push_back(streetTexture);
+
+	// Set the properties of the street tile for rendering
 	materialShininess = 40;
 	materialKd = 0.4;
 	materialKs = 0.4;
@@ -18,12 +21,14 @@ Streets::Streets(Texture2D *tex1, Texture2D *tex2) {
 Streets::~Streets() {
 }
 
+// Method for adding a street tile
 void Streets::addStreet(int type, float width, float height, float x, float z, int dir) {
+	// Set up the mesh:
 	vector<glm::vec3> vertices = {
-			glm::vec3(x + width, 0, z + height),	// Top Right
-			glm::vec3(x, 0, z + height),	// Bottom Right
-			glm::vec3(x, 0, z),	// Bottom Left
-			glm::vec3(x + width, 0, z),	// Top Left
+			glm::vec3(x + width, -0.0001, z + height),	// Top Right
+			glm::vec3(x, -0.0001, z + height),	// Bottom Right
+			glm::vec3(x, -0.0001, z),	// Bottom Left
+			glm::vec3(x + width, -0.0001, z),	// Top Left
 	};
 
 	vector<glm::vec3> normals
@@ -34,13 +39,7 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 		glm::vec3(0, 1, 0)
 	};
 	
-	vector<glm::vec2> textureCoords
-	{
-		glm::vec2(1, 0),
-		glm::vec2(1, 1),
-		glm::vec2(0, 1),
-		glm::vec2(0, 0)
-	};
+	vector<glm::vec2> textureCoords;
 	if (dir == 0 || dir == 1) {
 		textureCoords =	{
 			glm::vec2(1, 1),
@@ -48,10 +47,16 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 			glm::vec2(0, 0),
 			glm::vec2(1, 0)
 		};
+	} else {
+		textureCoords = {
+			glm::vec2(1, 0),
+			glm::vec2(1, 1),
+			glm::vec2(0, 1),
+			glm::vec2(0, 0)
+		};
 	}
 
-	vector<unsigned short> indices =
-	{
+	vector<unsigned short> indices = {
 		0, 1, 3,
 		1, 2, 3
 	};
@@ -59,6 +64,8 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 	Mesh* mesh = new Mesh("street");
 	mesh->InitFromData(vertices, normals, textureCoords, indices);
 	meshes.push_back(mesh);
+
+	// If the street tile is a intersection, set a different texture for it
 	if (type == CROSS) {
 		texturesId.push_back(0);
 	} else {
@@ -67,6 +74,7 @@ void Streets::addStreet(int type, float width, float height, float x, float z, i
 }
 
 void Streets::render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
+	// Render street tiles meshes:
 	glm::mat4 modelMatrix = glm::mat4(1);
 	for (int i = 0; i < meshes.size(); i++) {
 		renderMesh(meshes[i], shader, modelMatrix, textures[texturesId[i]], camera, lightPosition, typeOfLight);

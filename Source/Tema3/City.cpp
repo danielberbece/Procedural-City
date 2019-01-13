@@ -12,17 +12,24 @@
 using namespace std;
 
 City::City() {
+	// Seed at the beggining of time :)
 	std::srand(std::time(NULL));
 	loadTextures();
+	// Set the light position for the sun:
 	lightPosition = glm::vec3(0, 3, 0);
 	
+	// Initialize streets member with the proper textures
 	streets = new Streets(mapTextures["road"], mapTextures["crossroad"]);
 
+	// Prepare street map for generation of streets
+	limitStreetMap();
 
+	// Create the streets, procedurally
 	int rootLine = rand() / (RAND_MAX / (MODEL_WIDTH - 1) ) + 1;
 	int rootCol = rand() / (RAND_MAX / (MODEL_WIDTH - 1) ) + 1;
-	boardStreetMap();
 	generateStreets(rootLine, rootCol, North);
+
+	// Get building areas and make the buildings
 	getBuildingAreas();
 }
 
@@ -34,8 +41,9 @@ void City::setMode(int mode) {
 }
 
 void City::loadTextures() {
+	// Add .jpg textures
 	const string textureLoc = "Source/Tema3/Textures/";
-	vector<string> textNames = {"walls1", "roof1", "road", "crossroad", "soil", "grass", "walk" };
+	vector<string> textNames = {"walls1", "roof1", "road", "crossroad", "soil", "grass", "walk"};
 	Texture2D* texture;
 	for (int i = 0; i < textNames.size(); i++) {
 		texture = new Texture2D();
@@ -43,15 +51,18 @@ void City::loadTextures() {
 		mapTextures[textNames[i]] = texture;
 	}
 
-	textNames = {};
-	for (int i = 0; i < textNames.size(); i++) {
-		texture = new Texture2D();
-		texture->Load2D((textureLoc + textNames[i] + ".png").c_str(), GL_REPEAT);
-		mapTextures[textNames[i]] = texture;
-	}
+	// Add texture for parking lots, using GL_MIRRORED_REPEAT
+	texture = new Texture2D();
+	texture->Load2D((textureLoc + "parking.jpg").c_str(), GL_MIRRORED_REPEAT);
+	mapTextures["parking"] = texture;
+
+	// Add .png texture
+	texture = new Texture2D();
+	texture->Load2D((textureLoc + "walls2.png").c_str(), GL_REPEAT);
+	mapTextures["walls2"] = texture;
 }
 
-void City::boardStreetMap() {
+void City::limitStreetMap() {
 	for (int i = 0; i < MODEL_WIDTH; i++) {
 		streetMap[0][i] = -1;
 		streetMap[MODEL_WIDTH - 1][i] = -1;
@@ -61,25 +72,25 @@ void City::boardStreetMap() {
 }
 
 void City::getBuildingAreas() {
-	int totalAreas = 0;
 	vector<int> areaLimits;
 	for (int i = 0; i < MODEL_WIDTH; i++) {
 		for (int j = 0; j < MODEL_WIDTH; j++) {
 			if (streetMap[i][j] == 0) {
 				areaLimits = fillArea(i, j);
 				if (areaLimits[2] - areaLimits[0] > 2 && areaLimits[3] - areaLimits[1] > 2) {
-					int height = rand() / (RAND_MAX / 3) + 2;
-					int type = rand() / (RAND_MAX / 3) + 1;
-					buildings.push_back(new Building(type, height * meterUnitsScale, (areaLimits[2] - areaLimits[0]) * meterUnitsScale, (areaLimits[3] - areaLimits[1]) * meterUnitsScale,
-													 (areaLimits[0] + 0.5) * meterUnitsScale, (areaLimits[1] + 0.5) * meterUnitsScale, mapTextures["walls1"], mapTextures["roof1"]));
-					Decoration* d = new Decoration(mapTextures["walk"], 0, (areaLimits[2] - areaLimits[0] + 1) * meterUnitsScale, (areaLimits[3] - areaLimits[1] + 1) * meterUnitsScale,
-												   areaLimits[0] * meterUnitsScale, areaLimits[1] * meterUnitsScale, 0.6f);
-					decorations.push_back(d);
-					totalAreas += 1;
+					// Make buildings
+					putBuildingsInArea(areaLimits);
 				} else {
-					// TODO: Make green space or walk area
-					Decoration* d = new Decoration(mapTextures["grass"], -0.0001f, (areaLimits[2] - areaLimits[0] + 1) * meterUnitsScale, (areaLimits[3] - areaLimits[1] + 1) * meterUnitsScale,
-												   areaLimits[0] * meterUnitsScale, areaLimits[1] * meterUnitsScale, 0.1f);
+					// Make green space or parking lot
+					float decorationType = rand() / (RAND_MAX / 2.0f);
+					Decoration* d;
+					if (decorationType < 1) {	// Make green space
+						d = new Decoration(GRASS, mapTextures["grass"], 0, (areaLimits[2] - areaLimits[0] + 1) * meterUnitsScale, (areaLimits[3] - areaLimits[1] + 1) * meterUnitsScale,
+										   areaLimits[0] * meterUnitsScale, areaLimits[1] * meterUnitsScale);
+					} else {	// Make parking lot
+						d = new Decoration(PARKING, mapTextures["parking"], 0, (areaLimits[2] - areaLimits[0] + 1) * meterUnitsScale, (areaLimits[3] - areaLimits[1] + 1) * meterUnitsScale,
+										   areaLimits[0] * meterUnitsScale, areaLimits[1] * meterUnitsScale);
+					}
 					decorations.push_back(d);
 				}
 			}
@@ -87,7 +98,68 @@ void City::getBuildingAreas() {
 	}
 }
 
+void City::putBuildingsInArea(std::vector<int> limits) {
+
+	// Fill the area with multiple buildings:
+	float startX = (limits[0] + 0.5f) * meterUnitsScale;
+	float startY = (limits[1] + 0.5f) * meterUnitsScale;
+	if (limits[2] - limits[0] > limits[3] - limits[1]) {
+		// If the side on X axis is longer:
+		for (; startX < limits[2] * meterUnitsScale; startX += 0.5f * meterUnitsScale) {
+			if (limits[2] * meterUnitsScale - startX < 3.0f * meterUnitsScale) {
+				if (limits[2] * meterUnitsScale - startX < 0.5f * meterUnitsScale) {
+					// Not enough space for a real building
+					continue;
+				}
+				// make building the whole remaining area
+				int height = rand() / (RAND_MAX / 4) + 2;
+				int type = rand() / (RAND_MAX / 3) + 1;
+				buildings.push_back(new Building(type, height * meterUnitsScale, (limits[2] + 0.5f) * meterUnitsScale - startX, (limits[3] - limits[1]) * meterUnitsScale,
+					startX, startY, mapTextures["walls1"], mapTextures["walls2"], mapTextures["roof1"]));
+				startX = limits[2];
+			} else {
+				float width =(2 + rand() / (RAND_MAX / 1.0f)) * meterUnitsScale;
+				int height = rand() / (RAND_MAX / 4) + 2;
+				int type = rand() / (RAND_MAX / 3) + 1;
+				buildings.push_back(new Building(type, height * meterUnitsScale, width, (limits[3] - limits[1]) * meterUnitsScale,
+					startX, startY, mapTextures["walls1"], mapTextures["walls2"], mapTextures["roof1"]));
+				startX += width;
+			}
+		}
+	} else {
+		// If the side on Y axis is longer:
+		for (; startY < limits[3] * meterUnitsScale; startY += 0.5f * meterUnitsScale) {
+			if (limits[3] * meterUnitsScale - startY < 3.0f * meterUnitsScale) {
+				if (limits[3] * meterUnitsScale - startY < 0.5f * meterUnitsScale) {
+					// Not enough space for a real building
+					continue;
+				}
+				// make building the whole remaining area
+				int height = rand() / (RAND_MAX / 4) + 2;
+				int type = rand() / (RAND_MAX / 3) + 1;
+				buildings.push_back(new Building(type, height * meterUnitsScale, (limits[2] - limits[0]) * meterUnitsScale, (limits[3] + 0.5f) * meterUnitsScale - startY,
+												 startX, startY, mapTextures["walls1"], mapTextures["walls2"], mapTextures["roof1"]));
+				startY = limits[3];
+			} else {
+				float width = (2 + rand() / (RAND_MAX / 1.0f)) * meterUnitsScale;
+				int height = rand() / (RAND_MAX / 4) + 2;
+				int type = rand() / (RAND_MAX / 3) + 1;
+				buildings.push_back(new Building(type, height * meterUnitsScale, (limits[2] - limits[0]) * meterUnitsScale, width,
+												 startX, startY, mapTextures["walls1"], mapTextures["walls2"], mapTextures["roof1"]));
+				startY += width;
+			}
+		}
+	}
+
+	// Add some pavement so that the buildings don't float in dark space
+	decorations.push_back(new Decoration(PAVEMENT, mapTextures["walk"], 0, (limits[2] - limits[0] + 1) * meterUnitsScale, 
+		(limits[3] - limits[1] + 1) * meterUnitsScale,limits[0] * meterUnitsScale, limits[1] * meterUnitsScale));
+}
+
+
 vector<int> City::fillArea(int line, int col) {
+	// A Breath-First approach for getting the building areas
+
 	queue<pair<int, int> > Q;
 	Q.push(make_pair(line, col));
 	streetMap[line][col] = 2;
@@ -108,7 +180,7 @@ vector<int> City::fillArea(int line, int col) {
 		if (point.second > margins[3]) {
 			margins[3] = point.second;
 		}
-		// Go in each direction
+		// Go in each direction (N,S,W,E)
 		if (streetMap[point.first - 1][point.second] == 0) {
 			Q.push(make_pair(point.first - 1, point.second));
 			streetMap[point.first - 1][point.second] = 2;
@@ -130,24 +202,24 @@ vector<int> City::fillArea(int line, int col) {
 }
 
 void City::renderCity(Shader *shader, EngineComponents::Camera *camera) {
+	// Render buildings
 	for (auto building : buildings) {
 		building->render(shader, camera, lightPosition, typeOfLight);
 	}
 
+	// Render decorations (no-building areas)
 	for (auto d : decorations) {
 		d->render(shader, camera, lightPosition, typeOfLight);
 	}
 
+	// Render streets
 	streets->render(shader, camera, lightPosition, typeOfLight);
 }
 
 void City::generateStreets(int line, int col, Direction fromDir) {
-	if (!inMapArea(line, col)) {
-		// Reached end of map. The End.
-		return;
-	}
+	// Procedural generation of street map
 
-	// Current at the intersection:
+	// Current is an intersection, treat it as so
 	if (streetMap[line][col] == 0) {
 		streetMap[line][col] = 1;
 		// Check if ahead is a street. If it is, stop
@@ -155,10 +227,10 @@ void City::generateStreets(int line, int col, Direction fromDir) {
 			streets->addStreet(ROAD, meterUnitsScale, meterUnitsScale, line * meterUnitsScale, col * meterUnitsScale, (int)fromDir);
 		} else {
 			streets->addStreet(CROSS, meterUnitsScale, meterUnitsScale, line * meterUnitsScale, col * meterUnitsScale, (int)fromDir);
-			// go in 3 directions 
+			// Go in 3 directions, because one is already made (the one we came from)
 			for (int i = North; i <= West; i++) {
-				if (i != (int)fromDir && !isNextOccupied(line, col, (Direction)i)) {	// Go in this dir
-					// How much?
+				// Go in this dir if it is not towards another street, and is not the one we came from
+				if (i != (int)fromDir && !isNextOccupied(line, col, (Direction)i)) {	
 					makeStreet(line, col, (Direction)i);
 				}
 			}
@@ -167,6 +239,7 @@ void City::generateStreets(int line, int col, Direction fromDir) {
 }
 
 int City::isNextOccupied(int line, int col, Direction dir) {
+	// Check if in the next tiles there is already a street, in order to signal a stop
 	switch (dir) {
 	case North:
 		if (streetMap[line-1][col] == 1 || streetMap[line-1][col-1] == 1 || streetMap[line-1][col+1] == 1) {
@@ -228,15 +301,8 @@ void City::makeStreet(int line, int col, Direction dir) {
 	for (int i = 0; i < length; i++) {
 		line += dLine;
 		col += dCol;
-		if (!inMapArea(line, col)) {
-			// Reached end of map. The End.
-			return;
-		}
-		// TODO: Check on sides. If there is a street, put a cross and stop
-		//
 		if (streetMap[line][col] != 0) {
-			// Not an empty tile. The End.
-			//streets->addStreet(CROSS, meterUnitsScale, meterUnitsScale, line * meterUnitsScale, col * meterUnitsScale, (int)dir);
+			// Not an empty tile. Met another street or met the end of map. Exit.
 			return;
 		} else {
 			streetMap[line][col] = 1;
@@ -251,19 +317,8 @@ void City::makeStreet(int line, int col, Direction dir) {
 	generateStreets(line, col, oppositeDirection(dir));
 }
 
-void City::addStreetTile(int line, int col, Direction dir) {
-	streets->addStreet(CROSS, meterUnitsScale, meterUnitsScale, line * meterUnitsScale, col * meterUnitsScale, (int)dir);
-}
-
-int City::inMapArea(int line, int col) {
-	if (line >= MODEL_WIDTH || line < 0 || col >= MODEL_WIDTH || col < 0) {
-		cout << "ERROR: Checked and not in map area" << endl;
-		return 0;
-	}
-	return 1;
-}
-
 Direction City::oppositeDirection(Direction dir) {
+	// Get the opposite direction
 	switch (dir) {
 	case South:
 		return North;

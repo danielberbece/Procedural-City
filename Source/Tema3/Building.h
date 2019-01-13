@@ -9,7 +9,7 @@
 
 class Building {
 public:
-	Building(int type, float height, float width, float depth, float posX, float posZ, Texture2D *walls, Texture2D *roof);
+	Building(int type, float height, float width, float depth, float posX, float posZ, Texture2D *walls1, Texture2D *walls2, Texture2D *roof);
 	~Building();
 	void render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight);
 private:

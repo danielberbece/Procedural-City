@@ -9,15 +9,20 @@
 
 using namespace std;
 
-Building::Building(int t, float height, float width,  float depth, float posX, float posZ, Texture2D *walls, Texture2D *roof) {
+Building::Building(int t, float height, float width,  float depth, float posX, float posZ, Texture2D *walls1, Texture2D *walls2, Texture2D *roof) {
+	// Set the building params
 	mHeight = height;
 	mWidth = width;
 	mDepth = depth;
 	mPosX = posX;
 	mPosZ = posZ;
-	textureWalls = walls;
+
+	// Set texture for walls
+	textureWalls = walls1;
 	textureRoof = roof;
 	type = t;
+
+	// Randomly pick the building shape
 	float typeRand = ((float)std::rand()) / ((float)RAND_MAX / 2);
 	if (typeRand < 1) {
 		shape = Circle;
@@ -25,12 +30,17 @@ Building::Building(int t, float height, float width,  float depth, float posX, f
 		shape = Square;
 	}
 
+	// Specify the building lighting coefficients
 	materialShininess = 20;
 	materialKd = 0.5;
 	materialKs = 0.4;
 
+	// Create building, depending on type:
 	switch (type) {
 		case SIMPLE:
+			if (shape == Square) {
+				textureWalls = walls2;
+			}
 			createSimpleBuilding(shape, height, width, depth, posX, posZ);
 			break;
 		case BLOCKY:
@@ -40,6 +50,7 @@ Building::Building(int t, float height, float width,  float depth, float posX, f
 			createTowerBuilding(height, width, depth, posX, posZ);
 			break;
 		default:
+			// ERROR, no such building
 			break;
 	}
 	
@@ -62,7 +73,7 @@ void Building::createSimpleBuilding(SimpleShape shape, float height, float width
 			createRoof(height, width, depth, posX, posZ);
 			break;
 		case Circle:
-			//radius = sqrt(depth * width);
+			// The radius of the building will be the smallest side
 			if (depth < width) {
 				radius = depth;
 			} else {
@@ -82,7 +93,6 @@ void Building::createSimpleBuilding(SimpleShape shape, float height, float width
 void Building::createBlockyBuilding(SimpleShape shape) {
 	std::rand();
 	int numberBlocks = ((std::rand()) / (RAND_MAX / 4)) + 1;
-	cout << "Blocks: " << numberBlocks << endl;
 	float totalBlocks = numberBlocks;
 	float lastScale = 1.0f;
 	float scale;
@@ -118,7 +128,6 @@ void Building::createBlockyBuilding(SimpleShape shape) {
 			default:
 				break;
 		}
-		//createSimpleBuilding(shape, mHeight * heightScale , mWidth * scale, mDepth * scale, mPosX + mWidth * ((1 - scale) / 2), mPosZ + mDepth * ((1 - scale) / 2));
 		lastScale = scale;
 		lastHeightScale = heightScale;
 	}
@@ -146,20 +155,23 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 	glm::vec2 beforeTextCoord = glm::vec2(0.0f, 0.0f);
 	glm::vec3 beforeNorm = glm::vec3(1.0f, 0.0f, 0.0f);
 
-	// Implement a skip:
+	// Add some flat walls to the "cylinder" building
 	vector<float> anglesToSkip;
 	int anglesIndex = 0;
 	int angles = nFlatWalls;
-	if (angles == 4) {angles--;}
+	if (angles == 4) { angles--; }
 
+	// Set the angles at which the flat walls will be
 	for (int i = 0; i < angles; i++) {
 		float angleToSkip = (((float)std::rand()) / (float)RAND_MAX) * AI_MATH_HALF_PI;
 		angleToSkip += AI_MATH_HALF_PI * i * 0.9f;
 		anglesToSkip.push_back(angleToSkip);
 	}
 
+	// Add spotlight to light the buildings at night
 	float angleForLight = rand() / (RAND_MAX / AI_MATH_HALF_PI);
 
+	// Add the vertices, normals,... for the cylinder mesh
 	for (float i = AI_MATH_TWO_PI / ((float) slices), j = 0; i <= AI_MATH_TWO_PI + 0.01f; i += AI_MATH_TWO_PI / ((float) slices), j += 4) {
 		if (anglesIndex < anglesToSkip.size()) {
 			if ( i > anglesToSkip[anglesIndex] && i < anglesToSkip[anglesIndex] + AI_MATH_HALF_PI) {
@@ -208,6 +220,7 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 	beforeTextCoord = glm::vec2(1.0f, 0.0f);
 	anglesIndex = 0;
 
+	// Add the roof mesh
 	for (float i = AI_MATH_TWO_PI / (float)slices, j = 0; i <= AI_MATH_TWO_PI + 0.01f; i += AI_MATH_TWO_PI / (float)slices, j += 3) {
 		if (anglesIndex < anglesToSkip.size()) {
 			if (i > anglesToSkip[anglesIndex] && i < anglesToSkip[anglesIndex] + AI_MATH_HALF_PI) {
@@ -242,6 +255,7 @@ void Building::createCylinder(int nFlatWalls, float height, float radius, float 
 	mapTextures.push_back(textureRoof);
 }
 
+// Create Square roof
 void Building::createRoof(float height, float width, float depth, float x, float z) {
 	vector<glm::vec3> vertices = {
 		glm::vec3(x + width, height, z + depth),	// Top Right
@@ -374,12 +388,16 @@ void Building::createBuildingSide(float height, float width, float x, float z, i
 
 void Building::render(Shader *shader, EngineComponents::Camera *camera, glm::vec3 lightPosition, int typeOfLight) {
 	glm::mat4 modelMatrix = glm::mat4(1);
+
+	// If light is set to night light, the increase the diffuse parameter
 	if (typeOfLight == 1) {
 		materialKd = 2;
 	}
 	for (int i = 0; i < meshes.size(); i++) {	
 		renderMesh(meshes[i], shader, modelMatrix, mapTextures[i], camera, lightPosition, glm::vec3(0, 1, 0), typeOfLight);
 	}
+
+	// Set back the diffuse param
 	if (typeOfLight == 1) {
 		materialKd = 0.5;
 	}

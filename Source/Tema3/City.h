@@ -22,15 +22,14 @@ public:
 	void setMode(int mode);
 private:
 	void getBuildingAreas();
-	void boardStreetMap();
+	void limitStreetMap();
 	void loadTextures();
 	std::vector<int> fillArea(int line, int col);
 	int isNextOccupied(int line, int col, Direction dir);
 	Direction oppositeDirection(Direction dir);
 	void generateStreets(int line, int col, Direction fromDir);
 	void makeStreet(int startLine, int startCol, Direction dir);
-	void addStreetTile(int line, int col, Direction dir);
-	int inMapArea(int line, int col);
+	void putBuildingsInArea(std::vector<int> limits);
 	std::unordered_map<std::string, Texture2D*> mapTextures;
 	std::vector<Building*> buildings;
 	std::vector<Decoration*> decorations;

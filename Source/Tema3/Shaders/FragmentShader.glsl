@@ -23,7 +23,6 @@ uniform int t;
 layout(location = 0) out vec4 out_color;
 
 float CalcSpotLight(vec3 spotLightPos) {
-
 	vec3 light_direction = vec3(0, 1, 0);
 	vec3 N = normalize(world_normal);
 	vec3 L = normalize(spotLightPos - world_position);
@@ -53,8 +52,10 @@ float CalcSpotLight(vec3 spotLightPos) {
 void main()
 {
 	vec4 color1 = texture2D(texture_1, texcoord);
-	float light;
+	if(color1.a < 0.5f)
+		discard;
 
+	float light;
 	if (t == 1) {
 		light = 0.25;	// Ambient Light
 		for(int i = 0; i < NR_POINT_LIGHTS; i++)
