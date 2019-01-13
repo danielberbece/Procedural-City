@@ -3,7 +3,9 @@
 !.gitignore
 
 !/Visual Studio
+
 /Visual Studio/*
+!/Visual Studio/ClassDiagram.cd
 !/Visual Studio/Property Sheets
 !/Visual Studio/*.sln
 !/Visual Studio/*.vcxproj
@@ -16,5 +18,3 @@
 !/libs
 !/Resources
 !/Source
-
-/Visual Studio/.vs
